@@ -1,0 +1,283 @@
+---
+title: "Project"
+author: "Sarah Fitzgerald"
+output: pdf_document
+---
+```{r}
+knitr::opts_chunk$set(echo = FALSE) 
+```
+
+
+```{r}
+knitr::opts_chunk$set(echo = FALSE) 
+market.data <- read.csv("market info.csv")
+
+missing.data <- colSums(is.na(market.data))
+
+cleaned.data <- market.data[, colMeans(!is.na(market.data)) > 0.5]
+
+#what is the appeal of the various types of produce offered at the market 
+
+# ChatGPT was used to clean the data
+satisfaction <- summary(data.frame(
+  Quality = cleaned.data$Q16_1, 
+  Amount = cleaned.data$Q16_2,
+  Variety = cleaned.data$Q16_3
+))
+satisfaction
+
+barplot(table(cleaned.data$Q16_1), 
+        main = "Satisfaction with Produce Quality", 
+        xlab = "Satisfaction Level", 
+        ylab = "Frequency", 
+        col = "lightblue")
+```
+The majority of respondents rated their satisfaction with produce quality at the highest level, 5 ("Very Satisfied"), followed by a smaller but notable group who rated it as 4 ("Satisfied"). Very few respondents selected level 3 ("Neither dissatisfied nor satisfied"), and no respondents provided ratings of 1 ("Very Dissatisfied") or 2 ("Dissatisfied"). This absence of dissatisfaction highlights a high level of customer satisfaction and indicates that the market is successfully meeting or exceeding customer expectations regarding produce quality.
+
+These findings emphasize that produce quality is a key strength of the market. While the results are overwhelmingly positive, monitoring "Satisfied" (4) responses may provide opportunities for improvement to further elevate satisfaction levels to "Very Satisfied" (5). This proactive approach could help solidify customer loyalty and enhance the market's reputation.
+
+```{r}
+knitr::opts_chunk$set(echo = FALSE) 
+# Ranking factors by importance (Q15)
+# Calculate frequency of rankings
+
+# ChatGPT was used to clean the data
+quality_rank <- table(cleaned.data$Q15_1)  
+amount_rank <- table(cleaned.data$Q15_2)
+variety_rank <- table(cleaned.data$Q15_3)
+
+ranking <- data.frame(
+  Rank = as.numeric(names(quality_rank)),  # Ensure numeric ranks
+  Quality = as.numeric(quality_rank),
+  Amount = as.numeric(amount_rank),
+  Variety = as.numeric(variety_rank)
+)
+ranking
+
+# ChatGPT used to create the rankings and format the graph.
+# Ensure consistent row alignment (fill missing ranks with 0 if necessary)
+ranking <- merge(data.frame(Rank = 1:3), ranking, by = "Rank", all.x = TRUE)
+ranking[is.na(ranking)] <- 0  # Replace NA with 0
+
+# Increase right margin for better legend alignment
+par(mar = c(5, 4, 4, 8))  # Bottom, left, top, right margins
+
+barplot(as.matrix(ranking[, -1]), beside = TRUE, 
+        main = "Importance of Produce Factors", 
+        xlab = "Rank", 
+        ylab = "Frequency", 
+        col = c("lightblue", "pink", "lightgreen"),
+        legend.text = c("1st", "2nd", "3rd"), 
+        args.legend = list(
+          x = "topright",    # Keep legend on the top-right outside
+          inset = c(-0.2, 0) # Align legend outside the plot area
+        ))
+```
+When evaluating the importance of various produce factors, quality emerged as the most critical, with the majority of respondents ranking it as their top priority (Rank 1). A smaller portion placed it at Rank 2, and even fewer ranked it at Rank 3. This underscores that produce quality is the primary driver of customer satisfaction.
+
+In contrast, amount was ranked as less important overall, with higher frequencies observed for Ranks 2 and 3 compared to Rank 1. While availability of produce remains a consideration, it does not carry as much weight as quality. Variety displayed a more balanced distribution across ranks, often appearing as the second or third most important factor. This suggests mixed opinions about the importance of variety, with some customers valuing diversity in their produce options while others prioritize other factors.
+
+Given these findings, the market should continue to prioritize the maintenance and improvement of produce quality. Expanding the diversity of produce offerings could appeal to customers who place greater value on variety, while ensuring adequate stock levels may help address secondary concerns related to availability.
+
+```{r}
+knitr::opts_chunk$set(echo = FALSE) 
+#What do people come to the market to find?
+
+# Load necessary libraries
+library(ggplot2)
+
+# Extract relevant columns for produce types
+produce_data <- market.data[, c("Q12_1", "Q12_2", "Q12_3", "Q12_4")]
+
+# Replace NA with 0 and convert to numeric
+produce_data[is.na(produce_data)] <- 0
+produce_data <- as.data.frame(lapply(produce_data, as.numeric))
+
+# Summarize the data
+summary_stats <- summary(produce_data)
+print("Summary Statistics:")
+print(summary_stats)
+
+# Calculate mean, median, and standard deviation for each produce type
+# ChatGPT used to find values
+mean_values <- colMeans(produce_data)
+median_values <- apply(produce_data, 2, median)
+sd_values <- apply(produce_data, 2, sd)
+
+# Create a summary data frame with these statistics
+summary_table <- data.frame(
+  Produce = c("Vegetables", "Fruits", "Flowers", "Herbs"),
+  Mean = mean_values,
+  Median = median_values,
+  Standard_Deviation = sd_values
+)
+
+# Print the summary table
+print("Mean, Median, and Standard Deviation for each produce type:")
+print(summary_table)
+
+# Calculate total counts for each produce type
+produce_counts <- colSums(produce_data)
+
+# Create a data frame for plotting
+produce_types <- c("Vegetables", "Fruits", "Flowers", "Herbs")
+produce_counts_df <- data.frame(Produce = produce_types, Count = produce_counts)
+
+# ChatGPT was used for the graph
+# Bar plot
+ggplot(produce_counts_df, aes(x = Produce, y = Count, fill = Produce)) +
+  geom_bar(stat = "identity", alpha = 0.7) +
+  labs(title = "Popularity of Produce Types at the Market",
+       x = "Produce Type",
+       y = "Number of Respondents") +
+  theme_minimal() +
+  scale_fill_manual(values = c("green", "orange", "pink", "blue"))
+
+# ChatGPT was used for this hypothesis test.
+# Hypothesis testing (e.g., chi-square test for independence)
+# Test independence between Vegetables (Q12_1) and Fruits (Q12_2)
+contingency_table <- table(produce_data$Q12_1, produce_data$Q12_2)
+
+# Print the contingency table to inspect it
+print("Contingency Table:")
+print(contingency_table)
+
+# Ensure the table has at least 2 rows and 2 columns before performing the test
+if (nrow(contingency_table) >= 2 && ncol(contingency_table) >= 2) {
+  chi_square_test <- chisq.test(contingency_table)
+  print("Chi-Square Test Results:")
+  print(chi_square_test)
+} else {
+  cat("The contingency table does not have enough diversity for a chi-square test.\n")
+}
+```
+The analysis of product preferences further supports the importance of produce quality. Vegetables were the most frequently chosen product category, with a mean of 0.89 (approximately 89% of respondents), a standard deviation of 0.31, and a median of 1. Similarly, fruits were selected by 80% of respondents (mean = 0.80), with a slightly higher standard deviation of 0.40.
+
+Other produce items, such as herbs and flowers, showed moderate selection frequencies. Herbs were chosen by approximately 64% of respondents (mean = 0.64, standard deviation = 0.48), while flowers had a mean of 0.62 (62% of respondents) and a standard deviation of 0.49. Notably, no respondents selected "None," indicating that all surveyed customers expressed interest in at least one produce category.
+
+These preferences highlight a strong demand for vegetables and fruits, followed by moderate interest in herbs and flowers. This information can help the market align its offerings with customer demand to maintain satisfaction and meet expectations.
+
+A chi-square test was conducted to examine the association between the choice of vegetables and the choice of fruits. The results yielded a test statistic of 7.5249, with 1 degree of freedom and a p-value of 0.0061. Since the p-value is less than the significance level of 0.05, we reject the null hypothesis that the two variables are independent.
+
+These findings indicate a statistically significant association between the choice of vegetables and fruits. In other words, respondents who selected vegetables were more likely to also select fruits, and vice versa. This highlights complementary purchasing behavior among customers and suggests that both categories play a central role in their shopping preferences.
+
+```{r}
+knitr::opts_chunk$set(echo = FALSE) 
+#Q29: #What do people come to the market to find?
+
+# Load libraries
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(RColorBrewer) #ChatGPT used for these certain libraries
+library(tm)
+
+# Extract Q29 responses
+q29_responses <- market.data$Q29
+
+# ChatGPT was used to clean the data and standardize it.
+# Step 1: Clean the text data
+# Convert to lowercase, remove punctuation, numbers, and extra whitespace
+clean_responses <- tolower(q29_responses)
+clean_responses <- str_replace_all(clean_responses, "[[:punct:]]", " ")
+clean_responses <- str_replace_all(clean_responses, "[[:digit:]]", " ")
+clean_responses <- str_squish(clean_responses)
+
+# Step 2: Standardize common variations
+# Replace "fruits" with "fruit" (you can add more replacements as needed)
+clean_responses <- str_replace_all(clean_responses, "\\bfruits\\b", "fruit")
+
+# ChatGPT was used to Tokenize.
+# Step 3: Tokenize the text and remove common stopwords
+stopwords_custom <- c(stopwords("en"), "would", "like", "see", "specific", "produce")
+
+# Tokenize and filter out stopwords
+tokenized_words <- unlist(strsplit(clean_responses, "\\s+"))
+filtered_words <- tokenized_words[!tokenized_words %in% stopwords_custom]
+
+# Step 4: Count word frequencies
+word_freq <- as.data.frame(table(filtered_words))
+word_freq <- word_freq %>% arrange(desc(Freq))
+
+# Step 5: Bar chart for the top words
+top_words <- head(word_freq, 10)
+ggplot(top_words, aes(x = reorder(filtered_words, Freq), y = Freq, fill = Freq)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Top Requested Produce",
+       x = "Requests",
+       y = "Frequency") +
+  theme_minimal() +
+  scale_fill_gradient(low = "blue", high = "red")
+
+# ChatGPT was used for this visualization
+```
+The bar chart titled "Top Requested Produce" illustrates the specific produce items customers most frequently requested to see at the market, using a color gradient to reflect frequency levels. Higher frequencies are represented in red, while lower frequencies appear in blue, providing a clear visual indication of demand intensity across various produce categories.
+
+Top Requested Item:
+Fruit stands out as the most requested produce item, with a frequency of 7. This strong demand likely reflects both general fruit preferences and specific items such as apples, oranges, or berries. The high frequency suggests that customers view fruit as an essential offering and expect a diverse and consistent selection.
+
+Second Tier of Requests:
+The next most requested items—potatoes, cucumbers, and carrots—each have a frequency of 5. These vegetables are common household staples, indicating that customers prioritize availability of reliable, versatile produce for daily use. Their high placement underscores their importance in meeting core shopping needs.
+
+Mid-Tier Requests:
+Items like strawberries and eggs, each with a frequency of 4, occupy the middle tier of requests. The interest in strawberries may reflect seasonal demand or preferences for fresh, high-quality fruit options. Meanwhile, the request for eggs highlights customer interest in expanding the market's offerings beyond fruits and vegetables, signaling a demand for broader produce-related goods.
+
+Lower-Tier Requests:
+The chart also captures requests for zucchini and corn (each with a frequency of 3) as well as brussel sprouts and beans (each with a frequency of 2). While these items were mentioned less frequently, they still represent targeted preferences and niche demands. Their inclusion suggests that some customers seek specific produce to meet dietary needs or personal preferences, highlighting opportunities to cater to smaller but valuable market segments.
+
+In summary, the data reveals a clear hierarchy of customer requests, with fruits dominating the list, followed by staple vegetables and select niche items. These insights can guide the market in prioritizing produce offerings to better align with customer preferences and expectations.
+
+```{r}
+knitr::opts_chunk$set(echo = FALSE) 
+# What do they take?
+
+produce_portion <- table(cleaned.data$Q14) 
+print(produce_portion)
+
+# Bar plot for produce portion
+barplot(produce_portion, 
+        main = "Portion of Household Produce from Market", 
+        xlab = "Portion (%)", 
+        ylab = "Frequency", 
+        col = "orange")
+```
+When asked about the portion of household produce obtained from the market, most respondents (over 40 individuals) indicated that they purchase less than 25% of their produce at the market. A smaller group reported obtaining between 25% and 50% of their produce, while very few respondents indicated purchasing more than 50%. The smallest frequencies were observed for the highest portion (more than 75%).
+
+This sharp decline in frequencies as the percentage increases suggests that the market is not the primary source of household produce for most customers. While the market successfully meets certain needs, these results may indicate opportunities to attract customers who currently rely on alternative sources for larger portions of their produce.
+
+```{r}
+knitr::opts_chunk$set(echo = FALSE) 
+# Testing relationship whether satisfaction levels(Q16) influence the portion of produce obtained(Q14).
+
+# ChatGPT was used for this test since a ChiSq was giving errors.
+
+# Create the contingency table
+contingency_table <- table(cleaned.data$Q16_1, cleaned.data$Q14)
+print(contingency_table)
+
+# Check for missing values in the variables
+sum(is.na(cleaned.data$Q16_1))
+sum(is.na(cleaned.data$Q14))
+
+fisher.test(contingency_table)
+```
+A Fisher's Exact Test for Count Data was performed to investigate whether there is a relationship between customer satisfaction levels and the portion of produce obtained from the market. The test yielded a p-value of 0.2746, which is greater than the commonly used significance level of 0.05.
+
+Given that the p-value exceeds this threshold, we fail to reject the null hypothesis, which suggests that there is no significant association between satisfaction levels and the amount of produce customers obtain. In other words, the data does not provide sufficient evidence to conclude that satisfaction with produce quality influences the proportion of produce purchased by customers.
+
+This result indicates that while customers may have varying satisfaction levels, their purchasing behavior, in terms of the amount of produce they acquire, does not appear to be strongly influenced by how satisfied they are with the produce. It is important to note, however, that other factors, such as availability, or personal preferences, may play a more prominent role in determining how much produce customers choose to purchase.
+
+Overall, customer satisfaction with produce quality is exceptionally high, with very few signs of dissatisfaction. Quality remains the most important factor for customers, followed by varying degrees of importance for variety and amount. Vegetables and fruits are the most frequently chosen products, and there is a notable association between their selection.
+
+The market is primarily relied upon for small portions of household produce, which presents an opportunity to increase its role as a primary source. Customer requests highlight strong demand for fruits and staple vegetables, with mid-tier and niche preferences also contributing to overall interest.
+
+Key Recommendations:
+Maintain and enhance produce quality to sustain high satisfaction levels and meet customer expectations.
+
+Expand fruit and vegetable offerings to align with customer demand, particularly for top-requested items.
+
+Increase variety and specialty options to appeal to customers with niche preferences.
+
+Promote the market’s role as a primary produce source by addressing concerns related to availability and quantity.
+
